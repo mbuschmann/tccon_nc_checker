@@ -1,5 +1,5 @@
 from __future__ import print_function, division
-import os, sys, time
+import os, sys, time, struct
 from PyQt5.QtGui import QIcon
 from matplotlib.backends.qt_compat import QtCore, QtWidgets
 from matplotlib.backends.backend_qt5agg import FigureCanvas
@@ -458,7 +458,7 @@ class ftsreader():
             print('Error while processing '+path+' ... check self.log or do self.print_log()')
 
 class TcconCheck(QtWidgets.QMainWindow):
-    def __init__(self, ncfile):
+    def __init__(self, ncfile, spcrootfolder):
         super().__init__()
         self.ncfile = ncfile
         self.current_var = 'xluft'
@@ -467,11 +467,13 @@ class TcconCheck(QtWidgets.QMainWindow):
         self.xlims = None
         self.flagged = False
         self.printerrorbars = False
-        self.savefname = 'spc_to_remove_'+dt.datetime.now().strftime('%Y%m%d%H%M%S')+'.dat'
+        self.savefname = self.ncfile.split('/')[-1]+'_spc_to_remove_'+dt.datetime.now().strftime('%Y%m%d%H%M%S')+'.dat'
+        self.checkfname = self.ncfile.split('/')[-1]+'_dates_to_check_'+dt.datetime.now().strftime('%Y%m%d%H%M%S')+'.dat'
         self.spcname = ''
         #
         #self.spcdir = '/procdata/125HR_Bremen/Bremen_Solar/'
-        self.spcdir = '/procdata/ggg2020_spectra/125HR_Bremen/Bremen_Solar_lse_corrected/'
+        #self.spcdir = '/procdata/ggg2020_spectra/125HR_Bremen/Bremen_Solar_lse_corrected/'
+        self.spcdir = spcrootfolder #'/home/matthias/spectra/'
         #
         self.vars2 = ['flag', 'year', 'day', 'hour', 'run', 'lat', 'long', 'zobs', 'zmin', 'solzen',
                       'azim', 'osds', 'opd', 'fovi', 'amal', 'graw', 'tins', 'pins', 'tout', 'pout',
@@ -480,6 +482,7 @@ class TcconCheck(QtWidgets.QMainWindow):
         self.load_ncfile()
         self.spcdict = {}
         self.find_all_spc()
+        print('Found', len(list(self.spcdict.keys())), 'spectra')
         #
         #
         self.title = 'TCCON private.nc Checker'
@@ -563,6 +566,11 @@ class TcconCheck(QtWidgets.QMainWindow):
         self.gridlayout.addWidget(markbutton, 0, 5, 1 ,1, QtCore.Qt.AlignRight)
         markbutton.clicked.connect(self.remspc)
         #
+        markdaybutton=QtWidgets.QPushButton('Mark day for review',self)
+        markdaybutton.setToolTip("Mark this day for review later")
+        self.gridlayout.addWidget(markdaybutton, 1, 5, 1 ,1, QtCore.Qt.AlignRight)
+        markdaybutton.clicked.connect(self.markday)
+        #
         #checkBox = QtWidgets.QCheckBox("persistent x-axis?")
         ##        if self.quickplot: checkBox.toggle()
         #checkBox.stateChanged.connect(self.togglexlims)
@@ -632,6 +640,11 @@ class TcconCheck(QtWidgets.QMainWindow):
     #    self.i = self.dirlist.index(self.filename)
     #    self.dirlist2[self.i] = self.dirlist[self.i]+'  checked'
     #    item.setText(item.text()+'  checked')
+
+    def markday(self):
+        with open(self.checkfname, 'a', encoding='utf8') as f:
+            f.write(self.currentday.strftime('%Y-%m-%d')+'\n')
+        print(self.currentday.strftime('%Y-%m-%d'), 'marked for deletion')
 
     def remspc(self):
         if self.spcname!='':
@@ -705,8 +718,9 @@ class TcconCheck(QtWidgets.QMainWindow):
             try:
                 self._dynamic2_ax1.plot(o.spcwvn, o.spc, linewidth=1)
                 self._dynamic2_ax1.figure.canvas.draw()
-            except AttributeError:
-                print('No SPC found')
+            except Exception as e: #AttributeError:
+                print(e) #'No SPC found')
+                print(o.log)
             #try:
             #    self._dynamic2_ax2.plot(o.ifg, linewidth=1)
             #    self._dynamic2_ax2.figure.canvas.draw()
@@ -817,8 +831,9 @@ class TcconCheck(QtWidgets.QMainWindow):
 
 if __name__ == '__main__':
     app = QtWidgets.QApplication(sys.argv)
-    if len(sys.argv)==2:
-        ex = TcconCheck(sys.argv[1])
+    if len(sys.argv)==3:
+        print(sys.argv[1], sys.argv[2])
+        ex = TcconCheck(sys.argv[1], sys.argv[2])
     else:
-        sys.exit('Run like this:\n\tpython3 tccon_nc_checker.py path/to/tccon_nc_file.nc')
+        sys.exit('Run like this:\n\tpython3 tccon_nc_checker.py path/to/tccon_nc_file.nc path/to/spectra/rootfolder')
     sys.exit(app.exec_())
