@@ -475,11 +475,12 @@ class TcconCheck(QtWidgets.QMainWindow):
         #self.spcdir = '/procdata/ggg2020_spectra/125HR_Bremen/Bremen_Solar_lse_corrected/'
         self.spcdir = spcrootfolder #'/home/matthias/spectra/'
         #
-        self.vars2 = ['flag', 'year', 'day', 'hour', 'run', 'lat', 'long', 'zobs', 'zmin', 'solzen',
+        self.paramvars = ['flag', 'year', 'day', 'hour', 'run', 'lat', 'long', 'zobs', 'zmin', 'solzen',
                       'azim', 'osds', 'opd', 'fovi', 'amal', 'graw', 'tins', 'pins', 'tout', 'pout',
                       'hout', 'sia', 'fvsi', 'wspd', 'wdir', 'tmod', 'pmod', 'h2o_dmf_out', 'h2o_dmf_mod']
         #
         self.load_ncfile()
+        #print(self.data.variables)
         self.spcdict = {}
         self.find_all_spc()
         print('Found', len(list(self.spcdict.keys())), 'spectra')
@@ -537,16 +538,23 @@ class TcconCheck(QtWidgets.QMainWindow):
         #nextbutton.clicked.connect(self.nextspc)
         #
         #
-        self.cb = QtWidgets.QComboBox()
+        self.xgas = QtWidgets.QComboBox()
         for k in self.vars:
-            self.cb.addItem(k)
-        self.cb.currentIndexChanged.connect(self.selectionchange)
-        self.gridlayout.addWidget(self.cb, 0,0)
-        #self.cb2 = QtWidgets.QComboBox()
-        #for k in self.vars2:
-        #     self.cb2.addItem(k)
-        #self.cb2.currentIndexChanged.connect(self.selectionchange2)
-        #self.gridlayout.addWidget(self.cb2, 0,1)
+            self.xgas.addItem(k)
+        self.xgas.currentIndexChanged.connect(self.selectionchange)
+        self.params = QtWidgets.QComboBox()
+        for k in self.paramvars:
+            self.params.addItem(k)
+        self.params.currentIndexChanged.connect(self.selectionchange2)
+        self.profiles = QtWidgets.QComboBox()
+        for k in self.profilevars:
+            self.profiles.addItem(k)
+        self.profiles.currentIndexChanged.connect(self.selectionchange3)
+        #self.xgas2 = QtWidgets.QComboBox()
+        #for k in self.paramvars:
+        #     self.xgas2.addItem(k)
+        #self.xgas2.currentIndexChanged.connect(self.selectionchange2)
+        #self.gridlayout.addWidget(self.xgas2, 0,1)
         #
         #
         #self.textboxw = QtWidgets.QLabel(self) #QLineEdit(self)
@@ -559,16 +567,13 @@ class TcconCheck(QtWidgets.QMainWindow):
         #
         self.dirlistwidget = QtWidgets.QListWidget()
         #self.dirlistwidget.itemClicked.connect(self.listclick)
-        self.gridlayout.addWidget(self.dirlistwidget, 4,0,2,3, QtCore.Qt.AlignRight)
         #
         markbutton=QtWidgets.QPushButton('Delete spectrum',self)
         markbutton.setToolTip("Put a spectrumname on the list to filter out")
-        self.gridlayout.addWidget(markbutton, 0, 5, 1 ,1, QtCore.Qt.AlignRight)
         markbutton.clicked.connect(self.remspc)
         #
         markdaybutton=QtWidgets.QPushButton('Mark day for review',self)
         markdaybutton.setToolTip("Mark this day for review later")
-        self.gridlayout.addWidget(markdaybutton, 1, 5, 1 ,1, QtCore.Qt.AlignRight)
         markdaybutton.clicked.connect(self.markday)
         #
         #checkBox = QtWidgets.QCheckBox("persistent x-axis?")
@@ -576,15 +581,12 @@ class TcconCheck(QtWidgets.QMainWindow):
         #checkBox.stateChanged.connect(self.togglexlims)
         #self.gridlayout.addWidget(checkBox, 0, 2, QtCore.Qt.AlignRight)
         showallbutton=QtWidgets.QPushButton('Show all',self)
-        self.gridlayout.addWidget(showallbutton, 1, 0, 1 ,1, QtCore.Qt.AlignRight)
         showallbutton.clicked.connect(self.showall)
         #
         previousbutton=QtWidgets.QPushButton('Previous day',self)
-        self.gridlayout.addWidget(previousbutton, 1, 1, 1 ,1, QtCore.Qt.AlignRight)
         previousbutton.clicked.connect(self.previousday)
         #
         nextbutton=QtWidgets.QPushButton('Next day',self)
-        self.gridlayout.addWidget(nextbutton, 1, 2, 1 ,1, QtCore.Qt.AlignRight)
         nextbutton.clicked.connect(self.nextday)
         #
         self.textboxday = QtWidgets.QLabel(self)
@@ -596,20 +598,16 @@ class TcconCheck(QtWidgets.QMainWindow):
         #
         self.checkBox3 = QtWidgets.QCheckBox("day by day?")
         self.checkBox3.stateChanged.connect(self.nextday)
-        self.gridlayout.addWidget(self.checkBox3, 0, 2, QtCore.Qt.AlignRight)
         #
         self.checkBox = QtWidgets.QCheckBox("exclude flagged?")
         self.checkBox.stateChanged.connect(self.excludeflagged)
-        self.gridlayout.addWidget(self.checkBox, 0, 3, QtCore.Qt.AlignRight)
         #
         self.checkBox2 = QtWidgets.QCheckBox("show errorbars?")
         self.checkBox2.stateChanged.connect(self.toggleerrorbars)
-        self.gridlayout.addWidget(self.checkBox2, 0, 4, QtCore.Qt.AlignRight)
         #
         ##matplotlib integration from:
         ##https://matplotlib.org/gallery/user_interfaces/embedding_in_qt_sgskip.html#sphx-glr-gallery-user-interfaces-embedding-in-qt-sgskip-py
         self.dynamic_canvas = FigureCanvas(Figure(figsize=(6, 5)))
-        self.gridlayout.addWidget(self.dynamic_canvas, 2,0,2,6)
         self.addToolBar(QtCore.Qt.BottomToolBarArea, NavigationToolbar(self.dynamic_canvas, self))
         self._dynamic_ax1 = self.dynamic_canvas.figure.subplots(1)
         self._dynamic_ax1.xaxis.set_major_formatter(mtick.FuncFormatter(lambda x,p:x.strftime('%Y-%m-%d %H:%M:%S')))
@@ -619,7 +617,6 @@ class TcconCheck(QtWidgets.QMainWindow):
         #
         #
         self.dynamic_canvas2 = FigureCanvas(Figure(figsize=(6, 5)))
-        self.gridlayout.addWidget(self.dynamic_canvas2, 4,4,2,2)
         self.addToolBar(QtCore.Qt.BottomToolBarArea, NavigationToolbar(self.dynamic_canvas2, self))
         #self._dynamic2_ax1, self._dynamic2_ax2 = self.dynamic_canvas2.figure.subplots(2)
         self._dynamic2_ax1 = self.dynamic_canvas2.figure.subplots(1)
@@ -631,7 +628,22 @@ class TcconCheck(QtWidgets.QMainWindow):
         #self.dirlistwidget.itemClicked.connect(self.listclick)
         #self.gridlayout.addWidget(self.dirlistwidget, 1,3,3,2, QtCore.Qt.AlignRight)
         #
-        self.gridlayout.setColumnStretch(4, 4)
+        self.gridlayout.addWidget(self.xgas, 0,0)
+        self.gridlayout.addWidget(self.params, 0,1)
+        self.gridlayout.addWidget(self.profiles, 0,2)
+        self.gridlayout.addWidget(self.dirlistwidget, 4,0,2,3, QtCore.Qt.AlignRight)
+        self.gridlayout.addWidget(markbutton, 0, 6, 1 ,1, QtCore.Qt.AlignRight)
+        self.gridlayout.addWidget(markdaybutton, 1, 5, 1 ,1, QtCore.Qt.AlignRight)
+        self.gridlayout.addWidget(showallbutton, 1, 0, 1 ,1, QtCore.Qt.AlignRight)
+        self.gridlayout.addWidget(previousbutton, 1, 1, 1 ,1, QtCore.Qt.AlignRight)
+        self.gridlayout.addWidget(nextbutton, 1, 2, 1 ,1, QtCore.Qt.AlignRight)
+        self.gridlayout.addWidget(self.checkBox3, 0, 3, QtCore.Qt.AlignRight)
+        self.gridlayout.addWidget(self.checkBox, 0, 4, QtCore.Qt.AlignRight)
+        self.gridlayout.addWidget(self.checkBox2, 0, 5, QtCore.Qt.AlignRight)
+        self.gridlayout.addWidget(self.dynamic_canvas, 2,0,2,6)
+        self.gridlayout.addWidget(self.dynamic_canvas2, 4,4,2,2)
+        #
+        #self.gridlayout.setColumnStretch(4, 4)
         self._main.setLayout(self.gridlayout)
         self.show()
 
@@ -658,12 +670,12 @@ class TcconCheck(QtWidgets.QMainWindow):
                 self.spcdict[name] = os.path.join(root, name)
 
     def showall(self):
-        self.xcon = self.dates>np.min(self.dates)
+        self.xcon = self.data['time']>np.min(self.data['time'])
         self._dynamic_ax1.set_xlim(self.currentday-dt.timedelta(hours=2), self.currentday+dt.timedelta(hours=26))
         self._update_canvas()
 
     def setday(self):
-        self.xcon = (self.dates > self.currentday) & (self.dates<=self.currentday+dt.timedelta(days=1))
+        self.xcon = (self.data['time'] > self.currentday) & (self.data['time']<=self.currentday+dt.timedelta(days=1))
 
     def previousday(self):
         self.currentday = self.currentday-dt.timedelta(days=1)
@@ -698,9 +710,15 @@ class TcconCheck(QtWidgets.QMainWindow):
         ll = ''
         lll = []
         for l in points[:10]:
-            self.spcname = self.data['spectrum'][self.dates == l[0]].values[0]
-            ll+=l[0].strftime('%Y-%m-%d %H:%M:%S \t')+self.spcname+'\t'+str(self.data['pout'][self.dates == l[0]].values[0])+' hPa\t'+'\n'
-            lll.append(l[0].strftime('%Y-%m-%d %H:%M:%S \t')+self.spcname+'\t'+str(self.data['pout'][self.dates == l[0]].values[0])+' hPa\t')
+            try:
+                line = self.highlightpoint.pop(0)
+                line.remove()
+            except: pass
+            self.highlightpoint = self._dynamic_ax1.plot(l[0], l[1], 'go')
+            self._dynamic_ax1.figure.canvas.draw()
+            self.spcname = self.data['spectrum'][self.data['time'] == l[0]].values[0]
+            ll+=str(l[0].astype('datetime64[D]'))+'\t'+self.spcname+'\t'+str(self.data['pout'][self.data['time'] == l[0]].values[0])+' hPa\t'+'\n'
+            lll.append(str(l[0].astype('datetime64[D]'))+'\t'+self.spcname+'\t'+str(self.data['pout'][self.data['time'] == l[0]].values[0])+' hPa\t')
         print(ll)
         #item = QtWidgets.QListWidgetItem(item)
         self.dirlistwidget.clear()
@@ -749,31 +767,35 @@ class TcconCheck(QtWidgets.QMainWindow):
     #        self.xlims = self._dynamic_ax1.get_xlim()
     #    print('NOT IMPLEMENTED YET ... fixedxlims =', self.fixedxlims)
 
+    def selectionchange3(self,i):
+        self.current_profilevar = self.profilevars[i]
+        self._update_profile_canvas()
+
     def selectionchange2(self,i):
-        self.current_var2 = self.vars2[i]
+        self.current_var = self.paramvars[i]
         self._update_canvas()
 
     def selectionchange(self,i):
         self.current_var = self.vars[i]
         self._update_canvas()
         #print("Items in the list are :")
-        #for count in range(self.cb.count()):
-        #    print(self.cb.itemText(count))
-        #    print("Current index",i,"selection changed ",self.cb.currentText())
+        #for count in range(self.xgas.count()):
+        #    print(self.xgas.itemText(count))
+        #    print("Current index",i,"selection changed ",self.xgas.currentText())
 
     def load_ncfile(self):
         print('Reading', self.ncfile)
-        self.data = xr.open_dataset(self.ncfile, decode_times=False)
+        self.data = xr.open_dataset(self.ncfile, decode_timedelta=True)
         #c = np.arange(self.data['time'].shape[0]) < 100
         #self.data = self.data[c]
-        datetime_from_tccon = lambda d: dt.datetime(1970,1,1)+dt.timedelta(seconds=int(d))
+        #datetime_from_tccon = lambda d: dt.datetime(1970,1,1)+dt.timedelta(seconds=int(d))
         #ddd =dt.datetime.now()
         #self.dates = np.array([datetime_from_tccon(self.data['time'][i]) for i in range(self.data.dims['time'])])
         #print(dt.datetime.now()-ddd)
         #ddd =dt.datetime.now()
-        self.dates = np.array(list(map(lambda d: dt.datetime(1970,1,1)+dt.timedelta(seconds=int(d)), self.data['time'])))
+        #self.dates = np.array(list(map(lambda d: dt.datetime(1970,1,1)+dt.timedelta(seconds=int(d)), self.data['time'])))
         #print(dt.datetime.now()-ddd)
-        print(len(self.dates[self.dates<dt.datetime(2009,1,1)]))
+        print(len(self.data['time'][self.data['time']<np.datetime64(dt.datetime(2009,1,1))]))
         #
         #
         #np.datetime64(dt.date.today()) - df.index.values.astype('datetime64[D]')
@@ -783,13 +805,16 @@ class TcconCheck(QtWidgets.QMainWindow):
         for k in self.data.variables.keys():
             if k.startswith('x') and not '_' in k: #.endswith('_error'):
                 self.vars.append(k)
+        self.profilevars = [i for i in list(self.data.keys()) if i.startswith('ak_') and i!='ak_pressure' and not i.startswith('ak_slant')]
         #self.vars.sort()
-        self.vars = self.vars+self.vars2
-        self.xcon = self.dates>np.min(self.dates)
-        d = np.min(self.dates)
-        self.currentday = dt.datetime(d.year, d.month, d.day)
+        #self.vars = self.vars+self.params
+        self.xcon = self.data['time']>np.min(self.data['time'])
+        d = np.min(self.data['time']).values
+        self.currentday = d #dt.datetime(d.astype(dt.datetime).year, d.astype(dt.datetime).month, d.astype(dt.datetime).day)
         print(self.data['xluft'].shape[0], 'data points found')
 
+    def _update_profile_canvas(self):
+        pass
 
     def _update_canvas(self):
         #print('Plotting ', self.filename)
@@ -797,19 +822,19 @@ class TcconCheck(QtWidgets.QMainWindow):
         self._dynamic_ax1.set_title(self.ncfile.split('/')[-1])
         self._dynamic_ax1.set_ylabel(self.data[self.current_var].attrs['long_name']+' ['+self.data[self.current_var].attrs['units']+']')
         #self._dynamic_ax1.set_ylim(np.min(self.data[self.current_var]), np.max(self.data[self.current_var]))
-        d1 = np.min(self.dates[self.xcon])
-        d2 = np.max(self.dates[self.xcon])
-        self._dynamic_ax1.set_xlim(dt.datetime(d1.year, d1.month, d1.day)-dt.timedelta(hours=2), dt.datetime(d2.year, d2.month, d2.day)+dt.timedelta(hours=26))
+        d1 = np.min(self.data['time'][self.xcon]).astype('datetime64[D]')
+        d2 = np.max(self.data['time'][self.xcon]).astype('datetime64[D]')
+        self._dynamic_ax1.set_xlim(d1, d2)
         #if self.fixedxlims:
         #    self._dynamic_ax1.set_xlim(self.xlims)
         if self.flagged:
             cond1 = self.xcon.copy()
             cond1 = cond1 & (self.data['flag']==0)
             if self.printerrorbars and self.current_var+'_error' in self.data.variables.keys():
-                self._dynamic_ax1.errorbar(self.dates[cond1], self.data[self.current_var][cond1], yerr=self.data[self.current_var+'_error'][cond1], c='k', marker='None', linestyle='None', ecolor='gray')
-            self._dynamic_ax1.plot(self.dates[cond1], self.data[self.current_var][cond1], c='k', marker='.', linestyle='None', picker=True, pickradius=5)
+                self._dynamic_ax1.errorbar(self.data['time'][cond1], self.data[self.current_var][cond1], yerr=self.data[self.current_var+'_error'][cond1], c='k', marker='None', linestyle='None', ecolor='gray')
+            self._dynamic_ax1.plot(self.data['time'][cond1], self.data[self.current_var][cond1], c='k', marker='.', linestyle='None', picker=True, pickradius=5)
             #if self.current_var2!='':
-            #    self._dynamic_ax2.plot(self.dates[cond1], self.data[self.current_var2][cond1], c='b', marker='.', linestyle='None')
+            #    self._dynamic_ax2.plot(self.data['time'][cond1], self.data[self.current_var2][cond1], c='b', marker='.', linestyle='None')
             #    self._dynamic_ax2.set_ylim(np.min(self.data[self.current_var2]), np.max(self.data[self.current_var2]))
         else:
             cond1 = self.xcon.copy()
@@ -817,13 +842,13 @@ class TcconCheck(QtWidgets.QMainWindow):
             cond2 = self.xcon.copy()
             cond2 = cond2 & (self.data['flag']>0)
             if self.printerrorbars and self.current_var+'_error' in self.data.variables.keys():
-                self._dynamic_ax1.errorbar(self.dates[cond1], self.data[self.current_var][cond1], yerr=self.data[self.current_var+'_error'][cond1], c='k', marker='None', linestyle='None', ecolor='gray')
-                self._dynamic_ax1.errorbar(self.dates[cond2], self.data[self.current_var][cond2], yerr=self.data[self.current_var+'_error'][cond2], c='r', marker='None', linestyle='None', ecolor='orange')
-            self._dynamic_ax1.plot(self.dates[cond1], self.data[self.current_var][cond1], c='k', marker='.', linestyle='None', picker=True, pickradius=5)
-            self._dynamic_ax1.plot(self.dates[cond2], self.data[self.current_var][cond2], c='r', marker='.', linestyle='None', picker=True, pickradius=5)
+                self._dynamic_ax1.errorbar(self.data['time'][cond1], self.data[self.current_var][cond1], yerr=self.data[self.current_var+'_error'][cond1], c='k', marker='None', linestyle='None', ecolor='gray')
+                self._dynamic_ax1.errorbar(self.data['time'][cond2], self.data[self.current_var][cond2], yerr=self.data[self.current_var+'_error'][cond2], c='r', marker='None', linestyle='None', ecolor='orange')
+            self._dynamic_ax1.plot(self.data['time'][cond1], self.data[self.current_var][cond1], c='k', marker='.', linestyle='None', picker=True, pickradius=5)
+            self._dynamic_ax1.plot(self.data['time'][cond2], self.data[self.current_var][cond2], c='r', marker='.', linestyle='None', picker=True, pickradius=5)
             #if self.current_var2!='':
-            #    self._dynamic_ax2.plot(self.dates[cond1], self.data[self.current_var2][cond1], c='b', marker='.', linestyle='None')
-            #    self._dynamic_ax2.plot(self.dates[cond2], self.data[self.current_var2][cond2], c='g', marker='.', linestyle='None')
+            #    self._dynamic_ax2.plot(self.data['time'][cond1], self.data[self.current_var2][cond1], c='b', marker='.', linestyle='None')
+            #    self._dynamic_ax2.plot(self.data['time'][cond2], self.data[self.current_var2][cond2], c='g', marker='.', linestyle='None')
             #    self._dynamic_ax2.set_ylim(np.min(self.data[self.current_var2]), np.max(self.data[self.current_var2]))
         self._dynamic_ax1.figure.autofmt_xdate()
         self._dynamic_ax1.figure.canvas.draw()
